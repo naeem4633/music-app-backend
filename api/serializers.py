@@ -17,15 +17,6 @@ class PlaylistSerializer(serializers.ModelSerializer):
         model = Playlist
         fields = '__all__'
 
-
-# class CustomUserSerializer(serializers.ModelSerializer):
-#     playlists = PlaylistSerializer(many=True, read_only=True)
-#     liked_songs = SongSerializer(many=True, read_only=True)
-
-#     class Meta:
-#         model = User  # Use get_user_model() instead of CustomUser
-#         fields = '__all__'
-
 class CustomUserSerializer(serializers.ModelSerializer):
     playlists = PlaylistSerializer(many=True, read_only=True)
     liked_songs = SongSerializer(many=True, read_only=True)
