@@ -1,3 +1,15 @@
+import pytz
+import requests
+import os
+
+try:
+    response = requests.get('http://worldtimeapi.org/api/ip')
+    data = response.json()
+    server_timezone = data['timezone']
+    if server_timezone in pytz.all_timezones:
+        TIME_ZONE = server_timezone
+except requests.exceptions.RequestException:
+    pass
 """
 Django settings for backend project.
 
@@ -41,12 +53,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'spotify',
+    'frontend',
 ]
 
 MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -59,7 +72,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS' : [os.path.join(BASE_DIR, 'frontend/build')],  
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -122,6 +135,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'frontend/build/static')
+]
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
@@ -134,3 +151,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3001',
 ]
 
+TIME_ZONE = None
+if TIME_ZONE is None:
+    TIME_ZONE = 'UTC'

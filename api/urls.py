@@ -2,7 +2,6 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
-    # path('', views.get_all_playlists),
     path('liked-songs/<int:pk>', views.get_liked_songs),
     path('playlists/<int:pk>', views.get_user_playlists),
     path('register/', views.register_user),
