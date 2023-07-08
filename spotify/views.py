@@ -9,11 +9,12 @@ from django.shortcuts import redirect
 from .utils import get_user_tokens, is_spotify_authenticated, refresh_spotify_token, execute_spotify_api_request
 from datetime import datetime, timedelta
 from django.utils import timezone
+from rest_framework.decorators import api_view
 
-class AuthURL(APIView):
-    def get(self, request, format=None):
+@api_view(['GET'])
+def getAuthURL(request, format=None):
         print("AuthURL get function called")
-        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing'
+        scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing streaming playlist-read-private playlist-read-collaborative'
 
         url = Request('GET', 'https://accounts.spotify.com/authorize', params={
             'scope': scopes,
@@ -25,7 +26,6 @@ class AuthURL(APIView):
         return Response({'url': url}, status=status.HTTP_200_OK)
 
 def spotify_callback(request, format=None):
-
     code = request.GET.get('code')
     print("code from url: " + code)
     error = request.GET.get('error')
@@ -59,17 +59,17 @@ def spotify_callback(request, format=None):
         request.session.modified = True
     return redirect('http://127.0.0.1:8000/')
 
-class IsAuthenticated(APIView):
-    def get(self, request, format=None):
+@api_view(['GET'])
+def isAuthenticated(request, format=None):
         # print("isAuthenticated get function called")
         # print("session_key in isAuth: " + str(self.request.session.session_key))
-        is_authenticated = is_spotify_authenticated(self.request.session.session_key)
+        is_authenticated = is_spotify_authenticated(request.session.session_key)
         return Response({'status': is_authenticated}, status=status.HTTP_200_OK)
 
-class CurrentSong(APIView):
-    def get(self, request, format=None):
-        session_id = self.request.session.session_key
-        endpoint = "player/currently-playing"
+@api_view(['GET'])
+def getCurrentSong(request, format=None):
+        session_id = request.session.session_key
+        endpoint = "me/player/currently-playing"
         response = execute_spotify_api_request(session_id, endpoint)
 
         if 'error' in response or 'item' not in response:
@@ -102,3 +102,67 @@ class CurrentSong(APIView):
         }
 
         return Response(song, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+def getSavedPlaylists(request, format=None):
+    session_id = request.session.session_key
+    endpoint = "me/playlists"
+    response = execute_spotify_api_request(session_id, endpoint)
+
+    if 'error' in response or 'items' not in response:
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    playlists = []
+    for playlist in response['items']:
+        playlist_id = playlist['id']
+        playlist_name = playlist['name']
+        playlist_image = playlist['images'][0]['url']
+        number_of_songs = playlist['tracks']['total']
+
+        playlist_data = {
+            'id': playlist_id,
+            'name': playlist_name,
+            'image_url': playlist_image,
+            'number_of_songs': number_of_songs
+        }
+        playlists.append(playlist_data)
+
+    return Response(playlists, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def getSinglePlaylist(request, playlist_id, format=None):
+    session_id = request.session.session_key
+    endpoint = f"playlists/{playlist_id}"
+    response = execute_spotify_api_request(session_id, endpoint)
+
+    if 'error' in response:
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    playlist_data = {
+        'name': response.get('name'),
+        'description': response.get('description'),
+        'image_url': response.get('images')[0].get('url'),
+        'followers': response.get('followers').get('total'),
+        'songs': []
+    }
+
+    # artist_string = ""
+
+    # for i, artist in enumerate(response.get('tracks').get('items').get('track').get('artists')):
+    #     if i > 0:
+    #         artist_string += ", "
+    #     name = artist.get('name')
+    #     artist_string += name
+
+    tracks = response.get('tracks').get('items')
+    for track in tracks:
+        song = {
+            'image_url': track.get('track').get('album').get('images')[0].get('url'),
+            'name': track.get('track').get('name'),
+            'artist': track.get('track').get('artists'),
+            'album': track.get('track').get('album').get('name'),
+            'duration': track.get('track').get('duration_ms')
+        }
+        playlist_data['songs'].append(song)
+
+    return Response(playlist_data, status=status.HTTP_200_OK)
