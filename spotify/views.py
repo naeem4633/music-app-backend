@@ -126,8 +126,41 @@ def getSavedPlaylists(request, format=None):
             'number_of_songs': number_of_songs
         }
         playlists.append(playlist_data)
+        print("saved playlists" + str(playlist_data))
 
     return Response(playlists, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def getFeaturedPlaylists(request, format=None):
+    session_id = request.session.session_key
+    endpoint = "browse/featured-playlists"
+    response = execute_spotify_api_request(session_id, endpoint)
+
+    if 'error' in response or 'playlists' not in response:
+        print("error in response")
+        print(response)
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    playlists = []
+
+    for playlist in response['playlists']['items']:
+        playlist_id = playlist['id']
+        playlist_name = playlist['name']
+        playlist_image = playlist['images'][0]['url']
+        number_of_songs = playlist['tracks']['total']
+
+        playlist_data = {
+            'id': playlist_id,
+            'name': playlist_name,
+            'image_url': playlist_image,
+            'number_of_songs': number_of_songs
+        }
+        playlists.append(playlist_data)
+        print("featured playlists" + str(playlist_data))
+
+    return Response(playlists, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def getSinglePlaylist(request, playlist_id, format=None):
@@ -159,6 +192,7 @@ def getSinglePlaylist(request, playlist_id, format=None):
         song = {
             'image_url': track.get('track').get('album').get('images')[0].get('url'),
             'name': track.get('track').get('name'),
+            'uri': track.get('track').get('uri'),
             'artist': track.get('track').get('artists'),
             'album': track.get('track').get('album').get('name'),
             'duration': track.get('track').get('duration_ms')
@@ -166,3 +200,49 @@ def getSinglePlaylist(request, playlist_id, format=None):
         playlist_data['songs'].append(song)
 
     return Response(playlist_data, status=status.HTTP_200_OK)
+
+
+@api_view(['PUT'])
+def playSong(request, uri, format=None):
+    print("playSong function called")
+    session_id = request.session.session_key
+    endpoint = "me/player/play"
+
+    # Get the device_id from the request data (if available)
+    device_id = request.data.get('device_id', None)
+    print("uri" + uri)
+
+    # Construct the request body
+    request_body = {
+        "context_uri":  uri,
+        "offset": {"position": 0},
+        "position_ms": 0
+    }
+
+    # Execute the Spotify API request
+    api_response = execute_spotify_api_request(session_id, endpoint, put_=True, data=request_body)
+
+    # Handle the response
+    if 'error' in api_response:
+        print(api_response)
+        return Response({'error': api_response['error']}, status=api_response['status'])
+    else:
+        return Response(api_response, status=api_response['status'])
+
+
+# @api_view(['PUT'])
+# def playSong(request, track_uri, format=None):
+#      return execute_spotify_api_request(request.session.session_key, "player/play", put_=True)
+
+
+# class PauseSong(APIView):
+#     def put(self, response, format=None):
+#         pause_song(self.request.session.session_key)
+#         return Response({}, status=status.HTTP_204_NO_CONTENT)
+
+    
+# class PlaySong(APIView):
+#     def put(self, response, format=None):
+#         play_song(self.request.session.session_key)
+#         return Response({}, status=status.HTTP_204_NO_CONTENT)
+#         return Response({}, status=status.HTTP_403_FORBIDDEN)
