@@ -126,7 +126,7 @@ def getSavedPlaylists(request, format=None):
             'number_of_songs': number_of_songs
         }
         playlists.append(playlist_data)
-        print("saved playlists" + str(playlist_data))
+        # print("saved playlists" + str(playlist_data))
 
     return Response(playlists, status=status.HTTP_200_OK)
 
@@ -147,17 +147,20 @@ def getFeaturedPlaylists(request, format=None):
     for playlist in response['playlists']['items']:
         playlist_id = playlist['id']
         playlist_name = playlist['name']
+        # playlist_description : playlist['description'] if playlist['description'] else None
         playlist_image = playlist['images'][0]['url']
         number_of_songs = playlist['tracks']['total']
 
         playlist_data = {
             'id': playlist_id,
             'name': playlist_name,
+            # 'description' : playlist_description if playlist_description else "",
             'image_url': playlist_image,
             'number_of_songs': number_of_songs
         }
+
         playlists.append(playlist_data)
-        print("featured playlists" + str(playlist_data))
+        # print("featured playlists" + str(playlist_data))
 
     return Response(playlists, status=status.HTTP_200_OK)
 
@@ -230,19 +233,30 @@ def playSong(request, uri, format=None):
         return Response(api_response, status=api_response['status'])
 
 
-# @api_view(['PUT'])
-# def playSong(request, track_uri, format=None):
-#      return execute_spotify_api_request(request.session.session_key, "player/play", put_=True)
+@api_view(['GET'])
+def getCategorizedPlaylists(request, format=None):
+    print("getCategorizedPlaylists function called")
+    session_id = request.session.session_key
+    endpoint = "browse/categories/pop/playlists"
+    response = execute_spotify_api_request(session_id, endpoint)
 
+    if 'error' in response:
+        print(response)
+        return Response({}, status=status.HTTP_204_NO_CONTENT)
 
-# class PauseSong(APIView):
-#     def put(self, response, format=None):
-#         pause_song(self.request.session.session_key)
-#         return Response({}, status=status.HTTP_204_NO_CONTENT)
+    playlists = []
+    for playlist in response['playlists']['items']:
+        playlist_id = playlist['id']
+        playlist_name = playlist['name']
+        playlist_image = playlist['images'][0]['url']
+        number_of_songs = playlist['tracks']['total']
 
-    
-# class PlaySong(APIView):
-#     def put(self, response, format=None):
-#         play_song(self.request.session.session_key)
-#         return Response({}, status=status.HTTP_204_NO_CONTENT)
-#         return Response({}, status=status.HTTP_403_FORBIDDEN)
+        playlist_data = {
+            'id': playlist_id,
+            'name': playlist_name,
+            'image_url': playlist_image,
+            'number_of_songs': number_of_songs
+        }
+        playlists.append(playlist_data)
+
+    return Response(playlists, status=status.HTTP_200_OK)

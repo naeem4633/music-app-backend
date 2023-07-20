@@ -10,4 +10,5 @@ urlpatterns = [
     path('get-playlist/<str:playlist_id>', getSinglePlaylist),
     path('play-track/<str:uri>', playSong),
     path('get-featured-playlists', getFeaturedPlaylists),
+    path('get-categorized-playlists', getCategorizedPlaylists),
 ]

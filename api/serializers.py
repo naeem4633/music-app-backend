@@ -10,7 +10,6 @@ class SongSerializer(serializers.ModelSerializer):
         model = Song
         fields = '__all__'
 
-
 class PlaylistSerializer(serializers.ModelSerializer):
     songs = SongSerializer(many=True, read_only=True)
     class Meta:
