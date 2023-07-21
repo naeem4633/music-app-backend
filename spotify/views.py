@@ -237,7 +237,7 @@ def playSong(request, uri, format=None):
 def getCategorizedPlaylists(request, format=None):
     print("getCategorizedPlaylists function called")
     session_id = request.session.session_key
-    endpoint = "browse/categories/pop/playlists"
+    endpoint = "browse/categories/rock/playlists"
     response = execute_spotify_api_request(session_id, endpoint)
 
     if 'error' in response:
